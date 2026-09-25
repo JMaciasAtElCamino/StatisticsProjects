@@ -1,0 +1,408 @@
+<title>Know Your Deck</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #ffffff;
+    --frame: #f5f5f7;
+    --frame-line: #e5e5ea;
+    --card: #ffffff;
+    --card-edge: #d2d2d7;
+    --ink: #1d1d1f;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --red: #e3243b;
+    --accent: #0071e3;
+    --accent-soft: #e8f1fc;
+    --good: #248a3d;
+    --good-soft: #eaf6ec;
+    --bad-soft: #fdecee;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.47;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
+  }
+  .wrap {
+    max-width: 980px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 56px 72px;
+    display: grid;
+    gap: 36px;
+  }
+  header { display: grid; gap: 10px; text-align: center; justify-items: center; }
+  .eyebrow { font-size: 14px; font-weight: 600; color: var(--accent); letter-spacing: 0; }
+  h1 {
+    font-weight: 700; font-size: clamp(36px, 7vw, 56px);
+    line-height: 1.05; margin: 0; letter-spacing: -0.03em; text-wrap: balance;
+  }
+  h1 span { color: var(--muted); }
+  .lede { margin: 0; color: var(--muted); max-width: 58ch; font-size: 19px; line-height: 1.45; }
+
+  /* ---------- deck ---------- */
+  .table {
+    background: var(--frame);
+    border-radius: 22px;
+    padding: 24px;
+    display: grid;
+    gap: 18px;
+  }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; }
+  .filters .label { font-size: 14px; color: var(--muted); margin-right: 4px; }
+  .chip {
+    font: 500 14px var(--sans);
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--frame-line);
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background .2s, color .2s, border-color .2s;
+  }
+  .chip:hover { border-color: var(--card-edge); }
+  .chip[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .chip:focus-visible, .opt:focus-visible, .btn:focus-visible { outline: 3px solid rgba(0,113,227,.45); outline-offset: 2px; }
+
+  .deck { display: grid; gap: 8px; }
+  .row { display: grid; grid-template-columns: 6em repeat(13, minmax(0, 1fr)); gap: 6px; align-items: center; }
+  .row-name { font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .row-name b { font-size: 18px; line-height: 1; }
+  .row-name .r { color: var(--red); }
+  .row-name .k { color: var(--ink); }
+  .rankhead { display: grid; grid-template-columns: 6em repeat(13, minmax(0, 1fr)); gap: 6px; font-size: 12px; color: var(--muted); text-align: center; }
+  .card {
+    aspect-ratio: 5 / 7;
+    max-width: 100%;
+    background: var(--card);
+    border: 1px solid var(--frame-line);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.05);
+    display: grid;
+    place-items: center;
+    align-content: center;
+    font-weight: 600;
+    color: var(--ink);
+    transition: opacity .3s, transform .3s, box-shadow .3s;
+    user-select: none;
+  }
+  .card.red { color: var(--red); }
+  .card .rk { font-size: clamp(10px, 1.7vw, 17px); line-height: 1; letter-spacing: -0.02em; }
+  .card .st { font-size: clamp(12px, 2.3vw, 24px); line-height: 1.05; }
+  .deck.filtering .card { opacity: .22; }
+  .deck.filtering .card.on { opacity: 1; transform: translateY(-3px); box-shadow: 0 0 0 2px var(--accent), 0 8px 20px rgba(0,113,227,.18); }
+  .count { font-size: 15px; color: var(--muted); min-height: 1.5em; text-align: center; }
+  .count strong { color: var(--accent); font-size: 19px; }
+
+  /* ---------- quiz ---------- */
+  .quiz {
+    background: #fff;
+    color: var(--ink);
+    border: 1px solid var(--frame-line);
+    border-radius: 22px;
+    padding: 32px;
+    display: grid;
+    gap: 20px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.04);
+  }
+  .qtop { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+  .qtop .score { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
+  .progress { height: 4px; background: var(--frame); border-radius: 99px; overflow: hidden; }
+  .progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .4s; }
+  .question { font-weight: 700; font-size: clamp(22px, 3.4vw, 30px); line-height: 1.2; margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
+  .opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .opt {
+    font: 500 17px var(--sans);
+    text-align: left;
+    padding: 16px 18px;
+    border: 1px solid var(--frame-line);
+    border-radius: 14px;
+    background: var(--frame);
+    color: var(--ink);
+    cursor: pointer;
+    display: flex; gap: 12px; align-items: center;
+    transition: background .2s, border-color .2s;
+  }
+  .opt .key { font: 600 12px var(--sans); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: var(--muted); border: 1px solid var(--frame-line); flex: none; }
+  .opt:hover:not(:disabled) { background: #fff; border-color: var(--accent); }
+  .opt:disabled { cursor: default; }
+  .opt.correct { border-color: var(--good); background: var(--good-soft); }
+  .opt.correct .key { background: var(--good); color: #fff; border-color: var(--good); }
+  .opt.wrong { border-color: var(--red); background: var(--bad-soft); }
+  .opt.wrong .key { background: var(--red); color: #fff; border-color: var(--red); }
+  .feedback { border-radius: 14px; padding: 16px 18px; background: var(--frame); font-size: 16px; }
+  .feedback .verdict { font-weight: 600; display: block; margin-bottom: 2px; }
+  .feedback.ok .verdict { color: var(--good); }
+  .feedback.no .verdict { color: var(--red); }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+  .btn {
+    font: 500 17px var(--sans);
+    border-radius: 999px; padding: 11px 22px; cursor: pointer;
+    background: var(--accent); color: #fff; border: 1px solid var(--accent);
+    transition: background .2s;
+  }
+  .btn:hover { background: #0077ed; }
+  .btn.ghost { background: transparent; color: var(--accent); }
+  .btn.ghost:hover { background: var(--accent-soft); }
+  .done { text-align: center; display: grid; gap: 12px; justify-items: center; }
+  .done .big { font-weight: 700; font-size: 64px; line-height: 1; letter-spacing: -0.04em; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  .facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .fact { background: var(--frame); border-radius: 18px; padding: 18px; }
+  .fact b { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); display: block; line-height: 1.1; }
+  .fact span { font-size: 14px; color: var(--muted); }
+
+  @media (max-width: 640px) {
+    .wrap { padding-block: 32px 48px; padding-inline: 16px; gap: 24px; }
+    .row, .rankhead { grid-template-columns: 1.6em repeat(13, minmax(0, 1fr)); gap: 3px; }
+    .row-name span { display: none; }
+    .table { padding: 12px; border-radius: 16px; }
+    .card { border-radius: 4px; }
+    .opts { grid-template-columns: 1fr; }
+    .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .quiz { padding: 20px; border-radius: 18px; }
+    .lede { font-size: 17px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">A standard 52-card deck</div>
+    <h1>Know Your <span>Deck</span></h1>
+    <p class="lede">Every card in the deck is laid out below: one row per suit, one column per rank. Use the buttons to highlight groups of cards, then answer the questions. After each answer, the cards it's about light up so you can count them yourself.</p>
+  </header>
+
+  <section class="table" aria-label="The full deck">
+    <div class="filters" id="filters" role="group" aria-label="Highlight cards">
+      <span class="label">Highlight:</span>
+    </div>
+    <div class="deck" id="deck"></div>
+    <div class="count" id="count" aria-live="polite"></div>
+  </section>
+
+  <section class="quiz" id="quiz" aria-live="polite"></section>
+
+  <section class="facts" aria-label="Quick facts">
+    <div class="fact"><b>52</b><span>cards in the deck (no jokers)</span></div>
+    <div class="fact"><b>4</b><span>suits: ♥ ♦ are red, ♣ ♠ are black</span></div>
+    <div class="fact"><b>13</b><span>ranks per suit: A, 2–10, J, Q, K</span></div>
+    <div class="fact"><b>12</b><span>face cards: Jack, Queen, King in each suit</span></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const SUITS = [
+    { id: 'H', name: 'Hearts',   sym: '♥', red: true },
+    { id: 'D', name: 'Diamonds', sym: '♦', red: true },
+    { id: 'C', name: 'Clubs',    sym: '♣', red: false },
+    { id: 'S', name: 'Spades',   sym: '♠', red: false },
+  ];
+  const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  const FACE = ['J','Q','K'];
+  const NUM = ['2','3','4','5','6','7','8','9','10'];
+
+  const deck = [];
+  SUITS.forEach(s => RANKS.forEach(r => deck.push({ suit: s.id, rank: r, red: s.red })));
+
+  // ---------- build deck grid ----------
+  const deckEl = document.getElementById('deck');
+  const head = document.createElement('div');
+  head.className = 'rankhead';
+  head.innerHTML = '<div></div>' + RANKS.map(r => `<div>${r}</div>`).join('');
+  deckEl.appendChild(head);
+  const cardEls = [];
+  SUITS.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    const nm = document.createElement('div');
+    nm.className = 'row-name';
+    nm.innerHTML = `<b class="${s.red ? 'r' : 'k'}">${s.sym}</b><span>${s.name}</span>`;
+    row.appendChild(nm);
+    RANKS.forEach(r => {
+      const c = document.createElement('div');
+      c.className = 'card' + (s.red ? ' red' : '');
+      c.setAttribute('role', 'img');
+      const rankName = { A: 'Ace', J: 'Jack', Q: 'Queen', K: 'King' }[r] || r;
+      c.setAttribute('aria-label', `${rankName} of ${s.name}`);
+      c.innerHTML = `<span class="rk">${r}</span><span class="st">${s.sym}</span>`;
+      c._card = { suit: s.id, rank: r, red: s.red };
+      row.appendChild(c);
+      cardEls.push(c);
+    });
+    deckEl.appendChild(row);
+  });
+
+  const countEl = document.getElementById('count');
+  function highlight(pred, label) {
+    if (!pred) {
+      deckEl.classList.remove('filtering');
+      cardEls.forEach(c => c.classList.remove('on'));
+      countEl.textContent = '';
+      return;
+    }
+    let n = 0;
+    cardEls.forEach(c => { const on = pred(c._card); c.classList.toggle('on', on); if (on) n++; });
+    deckEl.classList.add('filtering');
+    countEl.innerHTML = `${label}: <strong>${n}</strong> card${n === 1 ? '' : 's'}`;
+  }
+
+  // ---------- filter chips ----------
+  const FILTERS = [
+    { label: 'Red',        pred: c => c.red },
+    { label: 'Black',      pred: c => !c.red },
+    { label: '♥ Hearts',   pred: c => c.suit === 'H' },
+    { label: '♦ Diamonds', pred: c => c.suit === 'D' },
+    { label: '♣ Clubs',    pred: c => c.suit === 'C' },
+    { label: '♠ Spades',   pred: c => c.suit === 'S' },
+    { label: 'Aces',       pred: c => c.rank === 'A' },
+    { label: 'Face cards', pred: c => FACE.includes(c.rank) },
+    { label: 'Numbers 2–10', pred: c => NUM.includes(c.rank) },
+  ];
+  const filtersEl = document.getElementById('filters');
+  const chips = [];
+  FILTERS.forEach(f => {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.type = 'button'; b.textContent = f.label;
+    b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', () => {
+      const on = b.getAttribute('aria-pressed') !== 'true';
+      chips.forEach(x => x.setAttribute('aria-pressed', 'false'));
+      if (on) { b.setAttribute('aria-pressed', 'true'); highlight(f.pred, f.label); }
+      else highlight(null);
+    });
+    filtersEl.appendChild(b); chips.push(b);
+  });
+  const clearChips = () => chips.forEach(x => x.setAttribute('aria-pressed', 'false'));
+
+  // ---------- questions ----------
+  const Q = [
+    { q: 'How many cards are in a standard deck (not counting jokers)?', a: '52', opts: ['48', '52', '54', '56'],
+      why: '4 suits × 13 cards each = 52 cards.', show: () => true, showLabel: 'Every card' },
+    { q: 'How many suits are there?', a: '4', opts: ['2', '3', '4', '13'],
+      why: 'The four suits are Hearts ♥, Diamonds ♦, Clubs ♣ and Spades ♠. Each suit is one row above.', show: () => true, showLabel: 'All four suits' },
+    { q: 'Which of these is NOT a suit in a standard deck?', a: 'Stars', opts: ['Clubs', 'Stars', 'Diamonds', 'Spades'],
+      why: 'The only suits are Hearts, Diamonds, Clubs and Spades.', show: () => true, showLabel: 'All four suits' },
+    { q: 'How many cards are in each suit?', a: '13', opts: ['10', '12', '13', '14'],
+      why: 'Each suit has Ace, 2 through 10, Jack, Queen and King: 13 cards.', show: c => c.suit === 'S', showLabel: 'One suit (Spades)' },
+    { q: 'Which two suits are red?', a: 'Hearts and Diamonds', opts: ['Hearts and Diamonds', 'Hearts and Spades', 'Clubs and Diamonds', 'Clubs and Spades'],
+      why: 'Hearts ♥ and Diamonds ♦ are red. Clubs ♣ and Spades ♠ are black.', show: c => c.red, showLabel: 'Red cards' },
+    { q: 'How many red cards are in the deck?', a: '26', opts: ['13', '20', '26', '32'],
+      why: 'Two red suits × 13 cards = 26. Exactly half the deck is red.', show: c => c.red, showLabel: 'Red cards' },
+    { q: 'How many black cards are in the deck?', a: '26', opts: ['12', '24', '26', '39'],
+      why: 'Clubs and Spades: 2 × 13 = 26 black cards.', show: c => !c.red, showLabel: 'Black cards' },
+    { q: 'How many Jacks are in the deck?', a: '4', opts: ['1', '2', '4', '8'],
+      why: 'There is one Jack in each suit, so 4 Jacks.', show: c => c.rank === 'J', showLabel: 'Jacks' },
+    { q: 'How many Aces are in the deck?', a: '4', opts: ['1', '4', '8', '13'],
+      why: 'One Ace per suit gives 4 Aces.', show: c => c.rank === 'A', showLabel: 'Aces' },
+    { q: 'Face cards are the Jack, Queen and King. How many face cards are there?', a: '12', opts: ['3', '9', '12', '16'],
+      why: '3 face cards in each suit × 4 suits = 12. (The Ace is not a face card.)', show: c => FACE.includes(c.rank), showLabel: 'Face cards' },
+    { q: 'How many red Kings are there?', a: '2', opts: ['1', '2', '4', '6'],
+      why: 'The King of Hearts and the King of Diamonds.', show: c => c.rank === 'K' && c.red, showLabel: 'Red Kings' },
+    { q: 'How many black face cards are there?', a: '6', opts: ['3', '4', '6', '12'],
+      why: 'J, Q, K of Clubs plus J, Q, K of Spades = 6.', show: c => FACE.includes(c.rank) && !c.red, showLabel: 'Black face cards' },
+    { q: 'How many cards are Hearts?', a: '13', opts: ['4', '12', '13', '26'],
+      why: 'Hearts is one full suit, so 13 cards.', show: c => c.suit === 'H', showLabel: 'Hearts' },
+    { q: 'How many cards show the number 7?', a: '4', opts: ['1', '4', '7', '13'],
+      why: 'There is one 7 in each suit: 4 sevens.', show: c => c.rank === '7', showLabel: 'Sevens' },
+    { q: 'How many number cards (2 through 10) are in the deck?', a: '36', opts: ['9', '36', '40', '44'],
+      why: '9 number cards (2–10) in each suit × 4 = 36.', show: c => NUM.includes(c.rank), showLabel: 'Number cards 2–10' },
+    { q: 'How many cards are a Heart OR a King?', a: '16', opts: ['13', '16', '17', '4'],
+      why: '13 Hearts + 4 Kings = 17, but the King of Hearts was counted twice, so 17 − 1 = 16.', show: c => c.suit === 'H' || c.rank === 'K', showLabel: 'Hearts or Kings' },
+    { q: 'You draw one card at random. What is the chance it is red?', a: '1/2', opts: ['1/4', '1/2', '1/13', '26/13'],
+      why: '26 red cards out of 52 = 26/52 = 1/2.', show: c => c.red, showLabel: 'Red cards' },
+    { q: 'You draw one card at random. What is the chance it is an Ace?', a: '1/13', opts: ['1/4', '1/13', '4/13', '1/52'],
+      why: '4 Aces out of 52 cards = 4/52 = 1/13.', show: c => c.rank === 'A', showLabel: 'Aces' },
+    { q: 'You draw one card at random. What is the chance it is a face card?', a: '3/13', opts: ['3/52', '1/4', '3/13', '12/13'],
+      why: '12 face cards out of 52 = 12/52 = 3/13.', show: c => FACE.includes(c.rank), showLabel: 'Face cards' },
+  ];
+
+  const quizEl = document.getElementById('quiz');
+  let order, idx, score, answered;
+
+  function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+  function start(randomize) {
+    order = randomize ? shuffle(Q.map((_, i) => i)) : Q.map((_, i) => i);
+    idx = 0; score = 0;
+    render();
+  }
+
+  function render() {
+    answered = false;
+    clearChips(); highlight(null);
+    const item = Q[order[idx]];
+    quizEl.innerHTML = `
+      <div class="qtop"><span>Question ${idx + 1} of ${Q.length}</span><span class="score">Score: ${score}</span></div>
+      <div class="progress" aria-hidden="true"><i style="width:${(idx / Q.length) * 100}%"></i></div>
+      <h2 class="question">${item.q}</h2>
+      <div class="opts" role="group" aria-label="Answer choices">
+        ${item.opts.map((o, i) => `<button type="button" class="opt" id="opt${i}" data-v="${o}"><span class="key">${'ABCD'[i]}</span>${o}</button>`).join('')}
+      </div>
+      <div id="fb"></div>
+      <div class="actions" id="actions"></div>`;
+    quizEl.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => choose(b)));
+  }
+
+  function choose(btn) {
+    if (answered) return;
+    answered = true;
+    const item = Q[order[idx]];
+    const right = btn.dataset.v === item.a;
+    if (right) score++;
+    quizEl.querySelectorAll('.opt').forEach(b => {
+      b.disabled = true;
+      if (b.dataset.v === item.a) b.classList.add('correct');
+    });
+    if (!right) btn.classList.add('wrong');
+    quizEl.querySelector('.score').textContent = `Score: ${score}`;
+    const fb = document.getElementById('fb');
+    fb.className = 'feedback ' + (right ? 'ok' : 'no');
+    fb.innerHTML = `<span class="verdict">${right ? 'Correct!' : `Not quite. The answer is ${item.a}.`}</span>${item.why} The matching cards are lit up in the deck above.`;
+    highlight(item.show, item.showLabel);
+    const last = idx === Q.length - 1;
+    const act = document.getElementById('actions');
+    act.innerHTML = `<button type="button" class="btn" id="next">${last ? 'See my score' : 'Next question'}</button>`;
+    const nx = document.getElementById('next');
+    nx.addEventListener('click', () => { idx++; last ? finish() : render(); });
+    nx.focus({ preventScroll: true });
+  }
+
+  function finish() {
+    clearChips(); highlight(null);
+    const pct = Math.round((score / Q.length) * 100);
+    const msg = pct === 100 ? 'Perfect. You know the deck inside out.'
+      : pct >= 75 ? 'Great work. Review the ones you missed and try again.'
+      : pct >= 50 ? 'Good start. Use the highlight buttons to explore, then try again.'
+      : 'Keep practicing. Explore the deck with the highlight buttons and try again.';
+    quizEl.innerHTML = `
+      <div class="progress" aria-hidden="true"><i style="width:100%"></i></div>
+      <div class="done">
+        <div class="big">${score}/${Q.length}</div>
+        <p style="margin:0">${msg}</p>
+        <div class="actions" style="justify-content:center">
+          <button type="button" class="btn" id="again">Play again</button>
+          <button type="button" class="btn ghost" id="shuf">Play in random order</button>
+        </div>
+      </div>`;
+    document.getElementById('again').addEventListener('click', () => start(false));
+    document.getElementById('shuf').addEventListener('click', () => start(true));
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    const k = e.key.toUpperCase();
+    if (!answered && 'ABCD'.includes(k) && k.length === 1) {
+      const b = document.getElementById('opt' + 'ABCD'.indexOf(k));
+      if (b) b.click();
+    }
+  });
+
+  start(false);
+})();
+</script>
